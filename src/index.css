@@ -1,0 +1,62 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  
+  --color-bg: #0a0a0a;
+  --color-surface: #161616;
+  --color-surface-alt: #222222;
+  --color-accent: #FFCA28;
+  --color-accent-glow: rgba(255, 202, 40, 0.2);
+  --color-success: #00E676;
+  --color-text-main: #ffffff;
+  --color-text-muted: #94a3b8;
+  
+  /* Map primary to accent for consistency */
+  --color-primary: #FFCA28;
+  --color-primary-dark: #F57C00;
+}
+
+@layer base {
+  body {
+    @apply bg-bg text-text-main font-sans antialiased;
+  }
+  
+  h1, h2, h3, h4 {
+    @apply font-bold tracking-tight text-text-main;
+  }
+}
+
+.glass-card {
+  @apply bg-surface border border-surface-alt shadow-xl;
+}
+
+.btn-primary {
+  @apply bg-accent hover:opacity-90 text-bg font-bold py-3 px-6 rounded-xl transition-all active:scale-95 disabled:opacity-50;
+}
+
+.btn-outline {
+  @apply border border-surface-alt text-text-main hover:bg-surface-alt font-semibold py-3 px-6 rounded-xl transition-all active:scale-95;
+}
+
+.nav-item-active {
+  @apply bg-surface-alt text-text-main font-semibold;
+}
+
+.store-card {
+  @apply bg-surface border border-surface-alt rounded-2xl overflow-hidden transition-all hover:border-accent;
+}
+
+.cat-pill {
+  @apply px-5 py-2 bg-surface border border-surface-alt rounded-full text-sm transition-all cursor-pointer hover:text-text-main;
+}
+
+.cat-pill-active {
+  @apply bg-accent text-bg font-bold border-accent;
+}
+
+.search-input {
+  @apply bg-surface border border-surface-alt px-5 py-3 rounded-xl text-sm text-text-muted focus:outline-none focus:border-accent transition-all w-full;
+}
+
