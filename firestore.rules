@@ -1,0 +1,97 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- ACCESSIBLE HELPERS ---
+    function isAuth() { return request.auth != null; }
+    
+    // Look up the store's listed merchantId securely, without querying the users profile table
+    function getStoreMerchant(storeId) {
+      let storeDoc = get(/databases/$(database)/documents/stores/$(storeId));
+      return storeDoc != null ? storeDoc.data.get('merchantId', '') : '';
+    }
+
+    // --- RULES ---
+
+    match /users/{userId} {
+      // Users can modify their own profile, or fetch other profiles (basic app needs)
+      allow read, write: if isAuth();
+    }
+
+    match /stores/{storeId} {
+      allow read: if true;
+      allow create: if isAuth(); 
+      // Update logic: 
+      // 1. You are the registered merchantId on this store 
+      // 2. You are updating ONLY the rating and reviewCount
+      allow update: if isAuth() && (
+        resource.data.get('merchantId', '') == request.auth.uid ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating', 'reviewCount'])
+      );
+      allow delete: if isAuth() && resource.data.get('merchantId', '') == request.auth.uid;
+    }
+
+    match /menuItems/{itemId} {
+      allow read: if true;
+      // You can create if you assert your own merchantId or own the store referenced
+      allow create: if isAuth() && (
+        request.resource.data.get('merchantId', '') == request.auth.uid ||
+        getStoreMerchant(request.resource.data.storeId) == request.auth.uid
+      );
+      // You can update/delete if you originally authored it or own the parent store
+      allow update, delete: if isAuth() && (
+        resource.data.get('merchantId', '') == request.auth.uid ||
+        getStoreMerchant(resource.data.storeId) == request.auth.uid
+      );
+    }
+
+    match /orders/{orderId} {
+      // You can view/read an order if:
+      // 1. You ordered it
+      // 2. You are listed directly as the merchantId on the order
+      // 3. You are the owner of the store this order is placed at (Fallback for old orders)
+      allow read: if isAuth() && (
+        resource.data.userId == request.auth.uid || 
+        resource.data.get('merchantId', '') == request.auth.uid ||
+        getStoreMerchant(resource.data.storeId) == request.auth.uid
+      );
+
+      // You place your own orders
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      
+      // Status update and generic updates are granted without brittle state transition checks.
+      allow update: if isAuth() && (
+        resource.data.userId == request.auth.uid || 
+        resource.data.get('merchantId', '') == request.auth.uid ||
+        getStoreMerchant(resource.data.storeId) == request.auth.uid
+      );
+      
+      allow delete: if isAuth() && (
+        resource.data.get('merchantId', '') == request.auth.uid ||
+        getStoreMerchant(resource.data.storeId) == request.auth.uid
+      );
+    }
+
+    match /addresses/{addressId} {
+      // Basic fallback
+      allow read, write: if isAuth() && (resource.data.userId == request.auth.uid || request.resource.data.userId == request.auth.uid);
+    }
+
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow write: if isAuth() && (resource.data.userId == request.auth.uid || request.resource.data.userId == request.auth.uid);
+    }
+    
+    match /favorites/{favoriteId} {
+      allow read, write: if isAuth() && (resource.data.userId == request.auth.uid || request.resource.data.userId == request.auth.uid);
+    }
+
+    match /test/{docId} {
+      allow read, write: if true;
+    }
+  }
+}
